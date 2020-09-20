@@ -1,0 +1,18 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Configure webserver with nginx
+  hosts: localhost
+  become: True
+  tasks:
+          - name: install nginx
+            apt: name=nginx state=latest update_cache=yes
+
+          - name: copy nginx config file
+            copy: src=files/nginx.conf dest=/etc/nginx/sites-available/default
+
+          - name: copy index.html
+            template: src=templates/index.html.j2 dest=/var/www/html/index.html mode=0644
+
+          - name: restart nginx
+            service: name=nginx state=restarted
+
