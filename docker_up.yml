@@ -1,0 +1,35 @@
+- name: Install and configure Docker
+  hosts: localhost
+  become: True
+  tasks:
+          - name: install required system packages
+            apt: 
+                pkg:
+                    - apt-transport-https
+                    - ca-certificates
+                    - curl
+                    - gnupg-agent
+                    - software-properties-common
+                state: latest
+                update_cache: yes
+
+          - name: add Docker gpg apt Key
+            apt_key:
+                    url: https://download.docker.com/linux/ubuntu/gpg
+                    state: present
+          - name: add Docker repository
+            apt_repository:
+                    repo: "deb https://download.docker.com/linux/ubuntu bionic stable"
+                    state: present
+          - name: update apt and install docker-ce
+            apt: name=docker-ce state=latest update_cache=yes
+
+          - name: set var max-file
+            shell: "echo $((`df -m | grep -E '/$' | awk '{print $2}'`/512/2))"
+            register: maxfile
+
+            #          - debug: var=maxfile.stdout
+
+          - name: copy docker config
+            template: src=templates/daemon.json.j2 dest=/etc/docker/daemon.json mode=0644
+

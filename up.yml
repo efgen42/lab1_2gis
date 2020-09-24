@@ -3,10 +3,25 @@
 - name: Configure webserver with nginx
   hosts: localhost
   become: True
+  vars:
+          - key: "/etc/ssl/private/server.key"
+          - cert: "/etc/ssl/certs/server.crt"
+          - dh: "/etc/ssl/certs/dhparam.pem"  
+
   tasks:
           - name: install nginx
             apt: name=nginx state=latest update_cache=yes
 
+          - name: create self-signed certificate and priv key 
+            command: >
+                    openssl req -x509 -nodes -subj '/CN=localhost' -days 365
+                    -newkey rsa:4096 -sha256 -keyout {{ key }} -out {{ cert }}
+                    creates={{ cert }}
+        
+          - name: create dh 
+            command: openssl dhparam -out {{dh}} 2048
+                     creates={{dh}}
+        
           - name: copy nginx config file
             copy: src=files/nginx.conf dest=/etc/nginx/nginx.conf
           
@@ -15,29 +30,19 @@
 
           - name: copy index.html
             template: src=templates/index.html.j2 dest=/var/www/html/index.html mode=0644
+          
+          - name: copy snippets
+            template: src=templates/{{item}} dest=/etc/nginx/snippets/{{item}} mode=0644
+            with_items:
+                    - self-signed.conf 
+                    - ssl-params.conf  
 
           - name: restart nginx
             service: name=nginx state=restarted
 
-- name: Install and configure Docker
-  hosts: localhost
-  become: True
-  tasks:
-          - name: install required system packages
-            apt: name={{item}} state=latest update_cache=yes
-            with_items:
-                    - apt-transport-https
-                    - ca-certificates
-                    - curl
-                    - gnupg-agent
-                    - software-properties-common
-          - name: add Docker gpg apt Key
-            apt_key:
-                    url: https://download.docker.com/linux/ubuntu/gpg
-                    state: present
-          - name: add Docker repository
-            apt_repository:
-                    repo: "deb https://download.docker.com/linux/ubuntu bionic stable"
-                    state: present
-          - name: update apt and install docker-ce
-            apt: name=docker-ce state=latest update_cache=yes
+
+- name: Include playbook docker_up
+  import_playbook: docker_up.yml
+
+
+
