@@ -1,25 +1,28 @@
 server {
-	listen 80 default_server;
-	listen [::]:80 default_server;
-	listen 443 ssl http2 default_server;
-	listen [::]:443 ssl http2 default_server;
-	server_name server_domain_or_IP;
-	include snippets/self-signed.conf;
-	include snippets/ssl-params.conf;
-	root /var/www/html;
-	index index.html index.htm index.nginx-debian.html;
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        listen 443 ssl http2 default_server;
+        listen [::]:443 ssl http2 default_server;
+        server_name server_domain_or_IP;
+        include snippets/self-signed.conf;
+        include snippets/ssl-params.conf;
+        root /var/www/html;
+        index index.html index.htm index.nginx-debian.html;
 
-	server_name _;
+        server_name _;
 
-	location / {
-	#	try_files $uri $uri/ 
-	#	@404;
-	
-	
-	error_page 404 =200 $scheme://www.google.com;
+        location / {
+                try_files $uri $uri/
+                @404;
+        }
 
-#	location @404 {
-#		proxy_pass $scheme://www.google.com;
-		}
-	}
+        #error_page 404 =200 $scheme://www.google.com;
 
+        location @404 {
+
+                proxy_pass $scheme://www.google.com;
+                proxy_set_header   Host             www.google.com;
+                proxy_set_header   X-Real-IP        $remote_addr;
+                proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+                }
+        }
